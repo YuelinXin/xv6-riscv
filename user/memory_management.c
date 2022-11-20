@@ -5,13 +5,22 @@
 #include "user/memory_management.h"
 
 // malloc
-void *malloc(uint size)
+void *malloc(int size)
 {
-    void *p;
-    p = sbrk(size);
-    if ((int)p == -1)
-        return 0;
-    return p;
+    // return NULL if size is 0
+    if (size <= 0)
+    {
+        return NULL;
+    }
+    // allocate memory
+    void *ptr = sbrk(size);
+    // return NULL if allocation failed
+    if (ptr == (void *)-1)
+    {
+        return NULL;
+    }
+    // return pointer to allocated memory
+    return ptr;
 }
 
 // free
