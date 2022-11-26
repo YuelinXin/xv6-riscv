@@ -1,5 +1,11 @@
 // malloc and free
 
+/*
+    something to do in the future:
+    1. make the malloc thread safe by using a thread lock
+    2. try to merge and split the blocks to increase the memory efficiency
+*/
+
 #include "kernel/types.h"
 #include "user/user.h"
 #include "user/memory_management.h"
@@ -13,7 +19,6 @@ void *heap_top = 0;
 void *_malloc(int size)
 {
     Block *block;
-    // TODO: align size?
 
     if (size <= 0) { // invalid size
         return 0;
@@ -30,7 +35,7 @@ void *_malloc(int size)
 
     if (!heap_top) { // first call to malloc, allocate the heap
         block = _request_space(0, size);
-        if (!block) {
+        if (!block) { // request failed
             return 0;
         }
         heap_top = block;
@@ -38,21 +43,20 @@ void *_malloc(int size)
     else
     {
         Block *last = heap_top;
-        int mem_ava = _memory_availability();
-        if (mem_ava / size > 2) { // if there is enough memory, use first fit
+        int mem_ava = _memory_availability(); // free memory available
+        if (mem_ava / size > 4) { // if memory is enough, use first fit
             block = _first_fit(&last, size);
         }
-        else {
+        else { // if memory is not enough, use worst fit
             block = _worst_fit(&last, size);
         }
-        if (!block) { // Failed to find free block.
+        if (!block) { // no free block available
             block = _request_space(last, size);
             if (!block) {
                 return 0;
             }
         }
-        else { // Found free block
-            // TODO: consider splitting block here.
+        else { // make it unavailable
             block->free = 0;
         }
     }
@@ -67,7 +71,7 @@ void _free(void *ptr)
         return;
     }
 
-    // TODO: consider merging blocks once splitting blocks is implemented.
+    // free the block
     Block *block = BLOCK_ADDR(ptr);
     if (block->free == 0) {
         block->free = 1;
@@ -80,6 +84,8 @@ void _free(void *ptr)
 Block *_first_fit(Block **last, int size)
 {
     Block *current = heap_top;
+    // find the first free block that fits the requested size
+    // fast but not memory efficient
     while (current && !(current->free && current->size >= size)) {
         *last = current;
         current = current->next;
@@ -92,6 +98,9 @@ Block *_worst_fit(Block **last, int size)
 {
     Block *current = heap_top;
     Block *worst = 0;
+    // find the biggest free block that fits the requested size
+    // this is to reduce the small block fragments
+    // slow but more memory efficient than first fit
     while (current) {
         if (current->free && current->size >= size) {
             if (!worst || current->size > worst->size) {
@@ -110,13 +119,13 @@ Block *_request_space(Block *last, int size)
     Block *block;
     block = (Block *)sbrk(0); // get the top of the heap
     void *request = sbrk(size + META_SIZE); // expand the heap
-    if ((void *)block == request) { // Not thread safe
+    if ((void *)block == request) { 
         return block;
     }
     if (request == (void *)-1) {
-        return 0; // sbrk failed.
+        return 0; // sbrk failed
     }
-    if (last) { // 0 on first request.
+    if (last) { // this should always point to the heap top
         last->next = block;
     }
     block->size = size;

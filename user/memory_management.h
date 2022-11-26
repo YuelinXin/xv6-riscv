@@ -6,14 +6,13 @@
 #define META_SIZE sizeof(Block) // the size of the metadata
 #define BLOCK_ADDR(ptr) ((Block *)ptr - 1) // the address of the metadata
 
-// a linked list of free memory blocks
+// a linked list of memory blocks
 // metadata for memory partitions
 typedef struct memory_block {
     struct memory_block *next;  // next block in the list
     uint size;                  // size of the block
     uint free;                  // is the block free?
 }Block;
-
 
 /**
  * @brief Allocates a block of memory of the given size
@@ -58,7 +57,7 @@ Block *_worst_fit(Block **last, int size);
 Block *_request_space(Block *last, int size);
 
 /**
- * @brief Calculate the percentage of available memory
+ * @brief Calculate the size of free memory
  * 
  * @return int
  */
