@@ -40,8 +40,7 @@ void *_malloc(int size)
         }
         heap_top = block;
     }
-    else
-    {
+    else {
         Block *last = heap_top;
         int mem_ava = _memory_availability(); // free memory available
         if (mem_ava / size > 4) { // if memory is enough, use first fit
@@ -71,8 +70,14 @@ void _free(void *ptr)
         return;
     }
 
-    // free the block
+    // check if the pointer is a valid block returned by malloc
+    // if not, return
     Block *block = BLOCK_ADDR(ptr);
+    if (!block->size) {
+        return;
+    }
+
+    // free the block
     if (block->free == 0) {
         block->free = 1;
         return;
