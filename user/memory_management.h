@@ -1,5 +1,6 @@
 #include "kernel/types.h"
 
+#define ALIGN 8 // the alignment size
 #define PAGE_SIZE 4096 // the page size
 #define SIZE_MAX 0xffffffff // the maximum size of a memory block
 #define META_SIZE sizeof(Block) // the size of the metadata
@@ -30,13 +31,22 @@ void* _malloc(int size);
 void _free(void* ptr);
 
 /**
- * @brief Find a free block to accommodate the requested size
+ * @brief Find the first free block big enough to accommodate the requested size
  * 
  * @param last 
  * @param size 
  * @return Block* 
  */
-Block *find_free_block(Block **last, int size);
+Block *_first_fit(Block **last, int size);
+
+/**
+ * @brief Find the biggest free block to accommodate the requested size
+ * 
+ * @param last 
+ * @param size 
+ * @return Block* 
+ */
+Block *_worst_fit(Block **last, int size);
 
 /**
  * @brief Request space from the OS when no free block is available
@@ -45,4 +55,11 @@ Block *find_free_block(Block **last, int size);
  * @param size 
  * @return Block* 
  */
-Block *request_space(Block *last, int size);
+Block *_request_space(Block *last, int size);
+
+/**
+ * @brief Calculate the percentage of available memory
+ * 
+ * @return int
+ */
+int _memory_availability();
