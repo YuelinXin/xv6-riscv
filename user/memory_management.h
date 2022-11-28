@@ -32,29 +32,29 @@ void _free(void* ptr);
 /**
  * @brief Find the first free block big enough to accommodate the requested size
  * 
- * @param last 
+ * @param end 
  * @param size 
  * @return Block* 
  */
-Block *_first_fit(Block **last, int size);
+Block *_first_fit(Block **end, int size);
 
 /**
  * @brief Find the biggest free block to accommodate the requested size
  * 
- * @param last 
+ * @param end 
  * @param size 
  * @return Block* 
  */
-Block *_worst_fit(Block **last, int size);
+Block *_worst_fit(Block **end, int size);
 
 /**
  * @brief Request space from the OS when no free block is available
  * 
- * @param last 
+ * @param end 
  * @param size 
  * @return Block* 
  */
-Block *_request_space(Block *last, int size);
+Block *_sbrk_wrapper(Block *end, int size);
 
 /**
  * @brief Calculate the size of free memory

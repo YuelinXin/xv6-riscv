@@ -34,23 +34,23 @@ void *_malloc(int size)
     }
 
     if (!heap_top) { // first call to malloc, allocate the heap
-        block = _request_space(0, size);
+        block = _sbrk_wrapper(heap_top, size);
         if (!block) { // request failed
             return 0;
         }
         heap_top = block;
     }
     else {
-        Block *last = heap_top;
+        Block *end = heap_top; // the end block of the heap
         int mem_ava = _memory_availability(); // free memory available
         if (mem_ava / size > 4) { // if memory is enough, use first fit
-            block = _first_fit(&last, size);
+            block = _first_fit(&end, size);
         }
         else { // if memory is not enough, use worst fit
-            block = _worst_fit(&last, size);
+            block = _worst_fit(&end, size);
         }
-        if (!block) { // no free block available
-            block = _request_space(last, size);
+        if (!block) { // no free block found
+            block = _sbrk_wrapper(end, size);
             if (!block) {
                 return 0;
             }
@@ -77,8 +77,8 @@ void _free(void *ptr)
         return;
     }
 
-    // free the block
-    if (block->free == 0) {
+    // free the block if the block has not been freed
+    if (!block->free) {
         block->free = 1;
         return;
     }
@@ -86,20 +86,20 @@ void _free(void *ptr)
 }
 
 // first fit
-Block *_first_fit(Block **last, int size)
+Block *_first_fit(Block **end, int size)
 {
     Block *current = heap_top;
     // find the first free block that fits the requested size
     // fast but not memory efficient
     while (current && !(current->free && current->size >= size)) {
-        *last = current;
+        *end = current;
         current = current->next;
     }
     return current;
 }
 
 // worst fit
-Block *_worst_fit(Block **last, int size)
+Block *_worst_fit(Block **end, int size)
 {
     Block *current = heap_top;
     Block *worst = 0;
@@ -112,26 +112,25 @@ Block *_worst_fit(Block **last, int size)
                 worst = current;
             }
         }
-        *last = current;
+        *end = current;
         current = current->next;
     }
     return worst;
 }
 
 // request space
-Block *_request_space(Block *last, int size)
+Block *_sbrk_wrapper(Block *end, int size)
 {
-    Block *block;
-    block = (Block *)sbrk(0); // get the top of the heap
+    Block *block = (Block *)sbrk(0); // get the top of the heap
     void *request = sbrk(size + META_SIZE); // expand the heap
+    if (request == (void *) - 1) {
+        return 0; // sbrk failed
+    }
     if ((void *)block == request) { 
         return block;
     }
-    if (request == (void *)-1) {
-        return 0; // sbrk failed
-    }
-    if (last) { // this should always point to the heap top
-        last->next = block;
+    if (end) { // this should always point to the heap top
+        end->next = block;
     }
     block->size = size;
     block->next = 0;
